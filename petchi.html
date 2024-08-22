@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEGENDARY Tamagotchi</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f4f4f4;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        #game-container {
+            display: inline-block;
+            padding: 20px;
+            border: 2px solid black;
+            background-color: #fff;
+            margin-top: 50px;
+        }
+
+        #pet-display {
+            width: 100px;
+            height: 100px;
+            margin: 20px auto;
+            background-size: cover;
+            background-repeat: no-repeat;
+            image-rendering: pixelated;
+        }
+
+        #stats p {
+            margin: 5px 0;
+            font-size: 18px;
+        }
+
+        #controls button {
+            font-size: 16px;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="pet-display"></div>
+        <div id="stats">
+            <p>🍴 Food: <span id="hunger"></span></p>
+            <p>🧼 Clean: <span id="cleanliness"></span></p>
+            <p>⌛ Age: <span id="age"></span> years</p>
+        </div>
+        <div id="controls">
+            <button id="feed">Feed (A)</button>
+            <button id="clean">Clean (B)</button>
+            <button id="sleep">Sleep (C)</button>
+            <button id="awake" style="display:none;">Awake (D)</button>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let pet = {
+                hunger: 5,
+                cleanliness: 5,
+                age: 0,
+                sleeping: false,
+                lastFed: null
+            };
+
+            const petGif = 'https://media.tenor.com/XRTmy5DN1pYAAAAC/tamagotchi-bandai.gif';
+            const poopGif = 'https://img1.picmix.com/output/stamp/normal/8/4/1/6/2526148_c97b9.gif';
+            const sleepGif = 'https://media.giphy.com/media/9uIxgWMKdlulQPImxk/giphy.gif';
+
+            function loadPet() {
+                const savedPet = JSON.parse(localStorage.getItem('tamagotchi-pet'));
+                if (savedPet) {
+                    pet = savedPet;
+                }
+                updateDisplay();
+            }
+
+            function savePet() {
+                localStorage.setItem('tamagotchi-pet', JSON.stringify(pet));
+            }
+
+            function updateDisplay() {
+                document.getElementById('hunger').innerText = "I".repeat(pet.hunger);
+                document.getElementById('cleanliness').innerText = "I".repeat(pet.cleanliness);
+                document.getElementById('age').innerText = pet.age;
+
+                const petDisplay = document.getElementById('pet-display');
+                if (pet.sleeping) {
+                    petDisplay.style.backgroundImage = `url('${sleepGif}')`;
+                    document.getElementById('sleep').style.display = 'none';
+                    document.getElementById('awake').style.display = 'inline-block';
+                } else if (pet.cleanliness <= 2) {
+                    petDisplay.style.backgroundImage = `url('${poopGif}')`;
+                    document.getElementById('sleep').style.display = 'inline-block';
+                    document.getElementById('awake').style.display = 'none';
+                } else {
+                    petDisplay.style.backgroundImage = `url('${petGif}')`;
+                    document.getElementById('sleep').style.display = 'inline-block';
+                    document.getElementById('awake').style.display = 'none';
+                }
+            }
+
+            function feedPet() {
+                if (!pet.sleeping) {
+                    pet.hunger = Math.min(pet.hunger + 1, 10);
+                    pet.lastFed = new Date();
+                    savePet();
+                    updateDisplay();
+
+                    // Schedule poop after 7 minutes of feeding
+                    setTimeout(() => {
+                        if (!pet.sleeping) {
+                            pet.cleanliness = Math.max(pet.cleanliness - 1, 0);
+                            updateDisplay();
+                        }
+                    }, 7 * 60 * 1000); // 7 minutes in milliseconds
+                }
+            }
+
+            function cleanPet() {
+                if (!pet.sleeping) {
+                    pet.cleanliness = Math.min(pet.cleanliness + 1, 10);
+                    savePet();
+                    updateDisplay();
+                }
+            }
+
+            function putPetToSleep() {
+                pet.sleeping = true;
+                savePet();
+                updateDisplay();
+            }
+
+            function awakePet() {
+                pet.sleeping = false;
+                savePet();
+                updateDisplay();
+            }
+
+            // Age progression: 1 year every 18 hours
+            setInterval(() => {
+                if (!pet.sleeping) {
+                    pet.age += 1;
+                    savePet();
+                    updateDisplay();
+                }
+            }, 18 * 60 * 60 * 1000); // 18 hours in milliseconds
+
+            // Event Listeners
+            document.getElementById('feed').addEventListener('click', feedPet);
+            document.getElementById('clean').addEventListener('click', cleanPet);
+            document.getElementById('sleep').addEventListener('click', putPetToSleep);
+            document.getElementById('awake').addEventListener('click', awakePet);
+
+            // Initial Load
+            loadPet();
+
+            // Simulate time passing for hunger and cleanliness
+            setInterval(function () {
+                if (!pet.sleeping) {
+                    pet.hunger = Math.max(pet.hunger - 1, 0);
+                    pet.cleanliness = Math.max(pet.cleanliness - 1, 0);
+                    if (pet.hunger === 0 || pet.cleanliness === 0) {
+                        alert("Your pet is in bad condition! Take care of it!");
+                    }
+                    savePet();
+                    updateDisplay();
+                }
+            }, 60 * 1000); // Every 60 seconds
+        });
+    </script>
+</body>
+</html>
